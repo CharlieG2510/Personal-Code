@@ -1,0 +1,80 @@
+import pygame
+from pygame.locals import *
+import random
+import sys
+
+pygame.init() # Init pygame
+W, H = 600, 600 # Screen setup
+
+screen = pygame.display.set_mode((W, H)) #Set the size of the window
+pygame.display.set_caption("Catch the Falling Blocks") #Make the caption of the window "Catch the Falling Blocks"
+
+WHT, BLU, RED, BLK = (255, 255, 255), (0, 200, 255), (255, 0, 0), (0, 0, 0) # Colors
+
+# Clock and font
+clock = pygame.time.Clock() #set up a clock to control the frame rate
+font = pygame.font.SysFont("times new roman", 36) #set up a font to display the score and game over message. First part is font, second is pixel size
+
+
+
+
+# Paddle and block
+paddle = pygame.Rect(W // 2 - 60, H - 20, 120, 10) #Creates a rectangle for the paddle with the specified position (first two commas x then y) and size (last two commas x then y)
+block = pygame.Rect(random.randint(0, W - 20), 0, 20, 20) #Creates a rectangle for the block with the specified position (first two commas x then y) and size (last two commas x then y). The x position is random between 0 and W-20 so that the block stays within the screen width. The y position is 0 so that it starts at the top of the screen. The size is 20x20 pixels.
+b_speed = 5 #starting spped of the block
+
+score = 0 # Score
+
+
+
+
+
+
+
+
+# Game loop
+run = True
+while run:
+    screen.fill(BLK) #Choose color for the background of the window using variables created before
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE): #If x button in top left conner is clicked (before the or) or escape button pressed (after the or), the game will clos
+            pygame.quit()
+            sys.exit()
+
+    
+    # Paddle movement
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] or keys[pygame.K_a] and paddle.left > 0: #If the left arrow key or 'A' key is pressed and the left side of the paddle is greater than 0 (the left edge of the screen), move the paddle left by 8 pixels
+        paddle.move_ip(-8, 0) #Paddle moves left by 8 pixels (negative x direction)
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d] and paddle.right < W: #If the right arrow key or 'D' key is pressed and the right side of the paddle is less than W (the right edge of the screen), move the paddle right by 8 pixels
+        paddle.move_ip(8, 0) #Paddle moves right by 8 pixels (positive x direction)
+
+    # Move block
+    block.y += b_speed  #Adding the speed of the block to the y position of the block so that it moves down the screen
+
+    # Block caught
+    if block.colliderect(paddle):  #If the block rectangle collides with the paddle rectangle, then the block is caught and the following code is executed
+        block.y = 0   #Reset the y position of the block to 0 so that it starts at the top of the screen again
+        block.x = random.randint(0, W - 20) #Reset the x position of the block to a random position between 0 and W-20 so that it stays within the screen width
+        score += 1 #Increase the score by 1
+        b_speed += 0.5  # Speed up
+
+    # Block missed
+    if block.y > H: #If the y position of the block is greater than H (the bottom edge of the screen), then the block is missed and the following code is executed
+        game_over = font.render(f"Game Over! Final Score: {score}", True, WHT)
+        screen.blit(game_over, (W // 2 - 150, H // 2))
+        pygame.display.flip()
+        pygame.time.wait(2000)
+        run = False
+
+    # Draw objects - render the paddle and block on the screen using the specified colors and rectangles
+    pygame.draw.rect(screen, WHT, paddle) #Pygame.draw.shape(what its being drawn on, color, what sprite is being drawn)
+    pygame.draw.rect(screen, BLU, block)
+
+    # Display score
+    score_text = font.render(f"Score: {score}", True, WHT)
+    screen.blit(score_text, (10, 10)) #Blit the score text on the screen at the specified position
+
+    pygame.display.flip()
+    clock.tick(60)
