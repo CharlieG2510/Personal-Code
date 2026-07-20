@@ -1,0 +1,342 @@
+import random
+import sys
+import time
+import os
+import pygame
+from pygame.locals import *
+
+pygame.init()
+
+
+
+pygame.mixer.init()
+
+# Load your music file (supports MP3, WAV, or OGG)
+pygame.mixer.music.load(f"specialist.mp3")
+
+# Play the music on an infinite loop (-1)
+pygame.mixer.music.play(-1)
+
+#Store sound effects here to be players by typeing the variable name and .play() after it example: "shot_noise.play()"
+shot_noise = pygame.mixer.Sound("shot_noise.mp3")
+spin_noise = pygame.mixer.Sound("gun-spin.mp3")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+WHT, BLU, RED, BLK = (255, 255, 255), (0, 200, 255), (255, 0, 0), (0, 0, 0) # Colors
+
+# Clock and font
+clock = pygame.time.Clock() #set up a clock to control the frame rate
+font = pygame.font.SysFont("times new roman", 18) #set up a font to display the score and game over message. First part is font, second is pixel size
+
+
+
+
+def chamber():
+        bullet_chamber = list()
+        total_bullets = 0
+        max_live = 5
+        
+        while total_bullets < 6:
+            live_or_blank = random.randint (0,1) #0=live 1=blank
+            if live_or_blank == 0:
+                if max_live > 0:
+                    max_live = max_live - 1
+                    bullet = 0
+                    
+                else:
+                    bullet = 1
+                    
+            else:
+                bullet = 1
+                
+            bullet_chamber.append(bullet)
+            total_bullets = total_bullets + 1
+        return bullet_chamber
+
+
+
+# Set up the game window
+screen = pygame.display.set_mode((600, 600)) #Size of Window
+pygame.display.set_caption("Hello Pygame") #Name of caption
+
+
+button_size = (100, 50) #Size of button
+
+
+button_1_pos = (50, 500) #Position of button 1
+button_2_pos = (250, 500) #Position of button 2
+button_3_pos = (450, 500) #Position of button 3
+
+
+
+
+turn = 'Players'
+p_health = 3
+ai_health = 3
+bullet_chamber = chamber()
+active_message = None
+message_until = 0
+move_result = None
+mouse_pressed = False
+ai_result = None
+end_started_at = None #countdown which will start when player lost
+my_image = pygame.image.load('guy.webp')
+p_gun = pygame.image.load("p_gun.png")
+ai_gun = pygame.image.load("enemy_gun.png")
+
+
+# Game loop
+running = True
+while running:
+    clock.tick(60) #Makes a gr
+    screen.fill(WHT) #Choose color for the background of the window using variables created before
+    move_result = None
+
+    for event in pygame.event.get(): #Handles all incoming events
+        if event.type == pygame.QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):    #If x button in top left conner is clicked (before the or) or escape button pressed (after the or), the game will close
+            running = False #Turn off game
+        
+        
+        
+        #CHECKING FOR CLICKS
+        elif turn == "Players" and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not mouse_pressed: #If the user should be pressing, they have clicked the mouse, and this is the first frame of them holding down the mouse
+            mouse_pressed = True #Notify the first frame has occured and thats all that matters
+            x, y = event.pos  #x, y is where the mouse is
+
+            if button_1_pos[0] <= x <= button_1_pos[0] + button_size[0] and button_1_pos[1] <= y <= button_1_pos[1] + button_size[1]: #If its in button one
+                print("Button 1 clicked")
+                move_result = 1 if bullet_chamber[0] == 0 else 2 #Make it the first result if its live and if blank result 2
+            elif button_2_pos[0] <= x <= button_2_pos[0] + button_size[0] and button_2_pos[1] <= y <= button_2_pos[1] + button_size[1]:
+                print("Button 2 clicked")
+                move_result = 3 if bullet_chamber[0] == 0 else 4
+            elif button_3_pos[0] <= x <= button_3_pos[0] + button_size[0] and button_3_pos[1] <= y <= button_3_pos[1] + button_size[1]:
+                print("Button 3 clicked")
+                random.shuffle(bullet_chamber)
+                move_result = None
+                spin_noise.play()
+        elif event.type == pygame.MOUSEBUTTONUP: #If the user stops holding the mouse
+            mouse_pressed = False #reset variable
+
+    mouse = pygame.mouse.get_pos()
+
+    #DISPLAYING EVERYTHING
+
+    main_text = font.render(f"Player health: {p_health}, AI health: {ai_health}, Bullets left: {len(bullet_chamber)}, Live Rounds: {bullet_chamber.count(0)}, Turn: {turn}", True, BLK) 
+    screen.blit(main_text, (20, 20))
+
+
+    screen.blit(my_image, (10, 150))
+
+    if active_message is None:
+        if turn == "Players":
+            screen.blit(p_gun, (0, 330))
+        elif turn == "AI":
+            screen.blit(ai_gun, (150, 350))
+    elif active_message == "It was Live" or active_message == "It was Blank":
+        screen.blit(p_gun, (0, 330))
+    else:
+        screen.blit(ai_gun, (150, 350))
+
+
+
+    #Creates a button with the specified color, position, and size. The first part is the color, second is the position, and third is the size
+    # if mouse is hovered on a button it
+    # changes to lighter shade 
+    if button_1_pos[0] <= mouse[0] <= button_1_pos[0] + button_size[0] and button_1_pos[1] <= mouse[1] <= button_1_pos[1] + button_size[1]:
+        pygame.draw.rect(screen,RED,[button_1_pos[0],button_1_pos[1],button_size[0],button_size[1]])
+        
+    else:
+        pygame.draw.rect(screen,BLK,[button_1_pos[0],button_1_pos[1],button_size[0],button_size[1]])
+
+    
+    if button_2_pos[0] <= mouse[0] <= button_2_pos[0] + button_size[0] and button_2_pos[1] <= mouse[1] <= button_2_pos[1] + button_size[1]:
+        pygame.draw.rect(screen,RED,[button_2_pos[0],button_2_pos[1],button_size[0],button_size[1]])
+        
+    else:
+        pygame.draw.rect(screen,BLK,[button_2_pos[0],button_2_pos[1],button_size[0],button_size[1]])
+
+    if button_3_pos[0] <= mouse[0] <= button_3_pos[0] + button_size[0] and button_3_pos[1] <= mouse[1] <= button_3_pos[1] + button_size[1]:
+        pygame.draw.rect(screen,RED,[button_3_pos[0],button_3_pos[1],button_size[0],button_size[1]])
+        
+    else:
+        pygame.draw.rect(screen,BLK,[button_3_pos[0],button_3_pos[1],button_size[0],button_size[1]])
+
+
+
+    #Makes text for the buttons and blits it onto the screen at the specified position
+    button_1_text = font.render(f"Self", True, WHT) #Render the score text using the specified font and color
+    screen.blit(button_1_text, (button_1_pos[0] + 35, button_1_pos[1] + 15)) #Blit the score text on the screen at the specified position (In the rectangle object created above)
+
+    button_2_text = font.render(f"Opponent", True, WHT) #Render the score text using the specified font and color
+    screen.blit(button_2_text, (button_2_pos[0] + 12, button_2_pos[1] + 15)) #Blit the score text on the screen at the specified position (In the rectangle object created above)
+
+    button_3_text = font.render(f"Spin", True, WHT) #Render the score text using the specified font and color
+    screen.blit(button_3_text, (button_3_pos[0] + 35, button_3_pos[1] + 15)) #Blit the score text on the screen at the specified position (In the rectangle object created above)
+
+
+    #GAME LOOP
+
+    current_time = pygame.time.get_ticks()
+
+    # If a temporary message is active and its timer has expired,
+    # clear it so it stops showing on screen.
+    if active_message and current_time >= message_until: #If there is an active message and its time on screen is greater than than or equal to message until
+        active_message = None
+
+    if p_health <= 0 or ai_health <= 0:
+        if active_message == None:
+            if end_started_at is None:
+                end_started_at = current_time
+
+            screen.fill(WHT)
+            result_text = "You Won :)" if ai_health <= 0 else "You Lost :("
+            banner = font.render(result_text, True, BLK)
+            screen.blit(banner, (240, 280))
+            pygame.display.update()
+
+            if current_time - end_started_at >= 5000:
+                running = False
+
+            continue
+
+    # draw everything
+    
+
+    #if no bullets left
+    if len(bullet_chamber) == 0:
+        if active_message == None:
+            active_message = "New Round"
+            message_until = current_time + 2000
+            bullet_chamber = chamber()
+            if active_message:
+                banner = font.render(active_message, True, BLK)
+                screen.blit(banner, (270, 300))
+    else:
+        if turn == "Players":
+            if active_message == None:
+                
+                if move_result == 1:
+                    active_message = "It was Live"
+                    message_until = current_time + 2000 #gives 2000 ticks to display message
+                    del bullet_chamber[0] #get rid of the object (live/blank) from the chamber list
+                    p_health -=1
+                    turn = "AI"
+                    shot_noise.play()
+
+                elif move_result == 2:
+                    active_message = "It was Blank"
+                    message_until = current_time + 2000
+                    del bullet_chamber[0]
+                    shot_noise.play()
+
+                elif move_result == 3:
+                    active_message = "It was Live"
+                    message_until = current_time + 2000
+                    ai_health -= 1
+                    del bullet_chamber[0]
+                    turn = "AI"
+                    shot_noise.play()
+
+                elif move_result == 4:
+                    active_message = "It was Blank"
+                    message_until = current_time + 2000
+                    del bullet_chamber[0]
+                    turn = "AI"
+                    shot_noise.play()
+
+                
+
+
+                if active_message:
+                    banner = font.render(active_message, True, BLK)
+                    screen.blit(banner, (270, 150))
+
+        
+        else:
+            if active_message is None:
+                # Only choose the AI result once the previous message has fully cleared.
+
+                shot_noise.play()
+                if len(bullet_chamber) == 1: #If theres one bullet left, they should know that whats in the chamber and if its live shoot player and shoot selves if its blank
+                    if bullet_chamber[0] == 0:
+                        print("The AI shot you and it was a live bullet")
+                        ai_result = 3
+                    else:
+                        print("The AI shot itself and it was a blank")
+                        ai_result = 4
+                else:
+                    ai_choice = random.randint(0,1)
+                    if ai_choice == 0: #Choose to shoot self
+                        if bullet_chamber[0] == 0:
+                            print('Ai shot self and live')
+                            ai_result = 1
+                        else:
+                            print('Ai shot self and blank')
+                            ai_result = 2
+                    elif ai_choice == 1: #Choose to shoot player
+                        if bullet_chamber[0] == 0:
+                            print('Ai shot you and live')
+                            ai_result = 3
+                        else:
+                            print('Ai shot you and blank')
+                            ai_result = 4
+                if ai_result == 1:
+                    active_message = "AI shot self and it was Live"
+                    message_until = current_time + 2000 #gives 2000 ticks to display message
+                    del bullet_chamber[0] #get rid of the object (live/blank) from the chamber list
+                    ai_health -=1
+                    turn = "Players"
+
+                elif ai_result == 2:
+                    active_message = "AI shot self It was Blank"
+                    message_until = current_time + 2000
+                    del bullet_chamber[0]
+
+                elif ai_result == 3:
+                    active_message = "AI shot you and It was Live"
+                    message_until = current_time + 2000
+                    p_health -= 1
+                    del bullet_chamber[0]
+                    turn = "Players"
+
+                elif ai_result == 4:
+                    active_message = "AI shot you It was Blank"
+                    message_until = current_time + 2000
+                    del bullet_chamber[0]
+                    turn = "Players"
+
+
+
+
+
+                if active_message:
+                    banner = font.render(active_message, True, BLK)
+                    screen.blit(banner, (270, 150))
+
+    if active_message:
+        banner = font.render(active_message, True, BLK)
+        screen.blit(banner, (270, 150))
+
+    pygame.display.update()
+
+
+pygame.quit()
+
+
+
+
+
+
+
